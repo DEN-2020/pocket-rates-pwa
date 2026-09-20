@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Pocket Rates exchange mark</title>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 196H330" stroke="#8C84FF" stroke-width="40"/>
+    <path d="M294 148L384 196L294 244" stroke="#8C84FF" stroke-width="40"/>
+    <path d="M400 316H182" stroke="#59D39C" stroke-width="40"/>
+    <path d="M218 268L128 316L218 364" stroke="#59D39C" stroke-width="40"/>
+  </g>
+</svg>
