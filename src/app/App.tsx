@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { ChartsScreen } from '../features/charts/ChartsScreen';
 import { ConverterScreen } from '../features/converter/ConverterScreen';
+import { CustomRateScreen } from '../features/custom-rates/CustomRateScreen';
+import { PwaStatus } from './PwaStatus';
 
-type AppTab = 'converter' | 'charts';
+type AppTab = 'converter' | 'charts' | 'custom';
 
 function tabFromHash(): AppTab {
-  return window.location.hash === '#/charts' ? 'charts' : 'converter';
+  if (window.location.hash === '#/charts') return 'charts';
+  if (window.location.hash === '#/custom-rate') return 'custom';
+  return 'converter';
 }
 
 export function App() {
@@ -18,7 +22,12 @@ export function App() {
   }, []);
 
   const navigate = (next: AppTab) => {
-    const hash = next === 'charts' ? '#/charts' : '#/converter';
+    const hash =
+      next === 'charts'
+        ? '#/charts'
+        : next === 'custom'
+          ? '#/custom-rate'
+          : '#/converter';
 
     if (window.location.hash === hash) {
       setTab(next);
@@ -30,7 +39,9 @@ export function App() {
 
   return (
     <>
-      {tab === 'converter' ? <ConverterScreen /> : <ChartsScreen />}
+      {tab === 'converter' && <ConverterScreen />}
+      {tab === 'charts' && <ChartsScreen />}
+      {tab === 'custom' && <CustomRateScreen />}
 
       <nav className="bottom-nav" aria-label="Main navigation">
         <button
@@ -52,7 +63,19 @@ export function App() {
           <span aria-hidden="true">⌁</span>
           <small>Charts</small>
         </button>
+
+        <button
+          type="button"
+          className={tab === 'custom' ? 'is-active' : ''}
+          aria-current={tab === 'custom' ? 'page' : undefined}
+          onClick={() => navigate('custom')}
+        >
+          <span aria-hidden="true">✎</span>
+          <small>My rate</small>
+        </button>
       </nav>
+
+      <PwaStatus />
     </>
   );
 }
