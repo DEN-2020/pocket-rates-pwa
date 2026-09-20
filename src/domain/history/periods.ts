@@ -1,9 +1,9 @@
 import type { HistoryGrouping } from './types';
 
-export type HistoryPeriod = '7d' | '1m' | '3m' | '6m' | '1y' | '2y' | '5y' | '10y';
+export type HistoryPeriod = '7d' | '1m' | '3m' | '6m' | '1y' | '2y' | '5y' | '10y' | 'max';
 
 export const historyPeriods: readonly HistoryPeriod[] = [
-  '7d', '1m', '3m', '6m', '1y', '2y', '5y', '10y'
+  '7d', '1m', '3m', '6m', '1y', '2y', '5y', '10y', 'max'
 ];
 
 export interface ResolvedHistoryPeriod {
@@ -45,5 +45,7 @@ export function resolveHistoryPeriod(period: HistoryPeriod, now = new Date()): R
     case '10y':
       from.setUTCFullYear(from.getUTCFullYear() - 10);
       return { from: isoDate(from), to: isoDate(to), grouping: 'month' };
+    case 'max':
+      return { from: '1948-01-01', to: isoDate(to), grouping: 'month' };
   }
 }
