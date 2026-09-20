@@ -42,20 +42,27 @@ Updated: 2026-09-20
 
 ## In progress
 
-### Phase 2 / 3
+### Historical charts
+- Historical-rate domain model is implemented.
+- Frankfurter provider supports ranged history with daily/weekly/monthly grouping.
+- Chart periods: 7d, 1m, 3m, 6m, 1y, 2y, 5y, 10y.
+- Charts screen supports pair selection, swap, current/min/max/% change and real coverage dates.
+- Lightweight Charts is lazy-loaded so the converter does not pay the chart bundle cost at startup.
+- Hash navigation provides direct GitHub Pages-compatible routes for Converter and Charts.
+
+## In progress
 - Real-device mobile UX refinement.
-- Better formatting and long-number handling.
-- Robust provider error states.
 - Cache retention/version policy.
+- Historical-series caching.
 - Asset manager gesture polish.
+- PWA install/update UI and final icons.
 
 ## Next
-1. Finish converter interaction polish.
-2. Add historical fiat provider methods and chart data model.
-3. Add lazy-loaded chart screen.
-4. Add PWA icons/manifest assets and update prompt UI.
-5. Validate install/offline behavior on the deployed origin.
-6. Add crypto provider only after the fiat path is stable.
+1. Add historical-series caching and chart retry state.
+2. Add PWA icons/manifest assets and update prompt UI.
+3. Validate install/offline behavior on the deployed origin.
+4. Add custom/manual rate screen.
+5. Add crypto provider only after the fiat path is stable.
 
 ## Deliberately deferred
 - Accounts/sync.
