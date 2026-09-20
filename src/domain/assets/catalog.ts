@@ -17,7 +17,10 @@ export const assetCatalog: readonly Asset[] = [
   { id: 'fiat:dkk', kind: 'fiat', code: 'DKK', name: 'Danish Krone', flag: '🇩🇰', displayPrecision: 2 },
   { id: 'fiat:pln', kind: 'fiat', code: 'PLN', name: 'Polish Zloty', flag: '🇵🇱', displayPrecision: 2 },
   { id: 'fiat:cad', kind: 'fiat', code: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦', displayPrecision: 2 },
-  { id: 'fiat:aud', kind: 'fiat', code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺', displayPrecision: 2 }
+  { id: 'fiat:aud', kind: 'fiat', code: 'AUD', name: 'Australian Dollar', flag: '🇦🇺', displayPrecision: 2 },
+  { id: 'crypto:btc', kind: 'crypto', code: 'BTC', name: 'Bitcoin', flag: '₿', displayPrecision: 8, providerIds: { coingecko: 'bitcoin' } },
+  { id: 'crypto:eth', kind: 'crypto', code: 'ETH', name: 'Ethereum', flag: 'Ξ', displayPrecision: 8, providerIds: { coingecko: 'ethereum' } },
+  { id: 'crypto:usdt', kind: 'crypto', code: 'USDT', name: 'Tether', flag: '₮', displayPrecision: 6, providerIds: { coingecko: 'tether' } }
 ] as const;
 
 export const initialAssetIds = ['fiat:eur', 'fiat:usd', 'fiat:egp', 'fiat:rub', 'fiat:try', 'fiat:cny'] as const;
