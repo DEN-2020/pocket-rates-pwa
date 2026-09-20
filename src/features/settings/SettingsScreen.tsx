@@ -93,8 +93,26 @@ export function SettingsScreen() {
         </dl>
       </section>
 
+      <section className="settings-card">
+        <div className="settings-section-heading">
+          <small>Data</small>
+          <strong>Sources</strong>
+        </div>
+
+        <div className="source-links">
+          <a href="https://frankfurter.dev/" target="_blank" rel="noreferrer">
+            <span>Fiat reference rates</span>
+            <strong>Frankfurter</strong>
+          </a>
+          <a href="https://www.coingecko.com/en/api" target="_blank" rel="noreferrer">
+            <span>Crypto pilot prices</span>
+            <strong>Powered by CoinGecko</strong>
+          </a>
+        </div>
+      </section>
+
       <p className="settings-note">
-        Pocket Rates keeps calculator inputs and preferences local. Market data comes from configured providers when the device is online.
+        Pocket Rates keeps calculator inputs and preferences local. Rates are informational reference data, not executable trading quotes. Crypto uses CoinGecko's keyless API only for the current pilot and can be rate-limited.
       </p>
     </main>
   );
