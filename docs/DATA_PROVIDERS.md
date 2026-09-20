@@ -39,3 +39,20 @@ Every snapshot/history result should carry:
 - hide provider fallback from the user
 - persist provider data longer than its terms permit
 - commit licensed market datasets to the public repository
+
+
+## Crypto pilot implementation
+
+Current pilot provider: **CoinGecko Keyless Public API**.
+
+Implementation rules:
+- only request prices when one or more crypto assets are selected
+- batch selected CoinGecko IDs into one `/simple/price` request
+- normalize USD price as units-per-USD so crypto can share the converter calculation kernel
+- do not persist CoinGecko market data in IndexedDB in the pilot
+- display `Powered by CoinGecko` attribution whenever CoinGecko-backed assets are active
+- handle rate-limit/provider failures as partial data instead of breaking fiat conversion
+- no scheduled polling or high-frequency refresh
+
+Production warning:
+CoinGecko documents the keyless API as useful for prototyping/open-source/educational use and explicitly says it is not suitable for production workloads, scheduled polling, or high-frequency updates. Before monetization, select an appropriate licensed plan/provider and re-review the applicable API terms, attribution, privacy/user-agreement obligations, cache/storage rules, and rate limits.
