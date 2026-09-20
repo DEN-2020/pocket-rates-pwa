@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FrankfurterProvider } from '../../adapters/providers/frankfurter';
 import { readPreference, writePreference } from '../../adapters/storage/preferencesDb';
+import { readQuoteSnapshot, writeQuoteSnapshot } from '../../adapters/storage/quoteSnapshotsDb';
 import { assetCatalog, findAsset, initialAssetIds } from '../../domain/assets/catalog';
 import { formatAssetAmount } from '../../domain/assets/format';
 import type { Asset } from '../../domain/assets/types';
@@ -17,6 +18,7 @@ import { CalculatorKeypad } from './CalculatorKeypad';
 const provider = new FrankfurterProvider();
 const plainNumberPattern = /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/;
 const layoutPreferenceKey = 'converter-layout-v1';
+const quoteCachePrefix = 'frankfurter:USD:';
 
 interface ConverterLayoutPreference {
   selectedAssetIds: string[];
@@ -68,7 +70,7 @@ export function ConverterScreen() {
   const [expression, setExpression] = useState('100');
   const [calculatorError, setCalculatorError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<QuoteSnapshot | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'stale' | 'error'>('loading');
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
 
@@ -124,24 +126,48 @@ export function ConverterScreen() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let alive = true;
     const codes = quoteCodesKey.split(',').filter(Boolean);
+    const cacheKey = `${quoteCachePrefix}${quoteCodesKey}`;
 
+    setSnapshot(null);
     setStatus('loading');
 
-    void provider
-      .getLatest('USD', codes, controller.signal)
-      .then((next) => {
+    void (async () => {
+      let cached: QuoteSnapshot | undefined;
+
+      try {
+        cached = await readQuoteSnapshot(cacheKey);
+        if (alive && cached) {
+          setSnapshot(cached);
+          setStatus('stale');
+        }
+      } catch (error) {
+        console.warn('Could not read cached rates.', error);
+      }
+
+      try {
+        const next = await provider.getLatest('USD', codes, controller.signal);
+        if (!alive) return;
+
         setSnapshot(next);
         setStatus('ready');
-      })
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          console.error(error);
-          setStatus('error');
-        }
-      });
 
-    return () => controller.abort();
+        void writeQuoteSnapshot(cacheKey, next).catch((error: unknown) => {
+          console.warn('Could not cache rates.', error);
+        });
+      } catch (error) {
+        if (!controller.signal.aborted && alive) {
+          console.error(error);
+          setStatus(cached ? 'stale' : 'error');
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+      controller.abort();
+    };
   }, [quoteCodesKey]);
 
   useEffect(() => {
@@ -284,7 +310,7 @@ export function ConverterScreen() {
 
       <p className="meta">
         {snapshot
-          ? `${snapshot.source} · ${snapshot.quoteType} · ${snapshot.sourceDate}`
+          ? `${snapshot.source} · ${snapshot.quoteType} · ${snapshot.sourceDate}${status === 'stale' ? ' · cached' : ''}`
           : status === 'error'
             ? 'Rates unavailable'
             : 'Loading rates…'}
