@@ -928,3 +928,10 @@ button, input { font: inherit; }
     padding: 6px;
   }
 }
+
+
+.provider-attribution {
+  color: var(--muted);
+  font-size: 13px;
+  text-underline-offset: 2px;
+}
