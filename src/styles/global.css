@@ -579,3 +579,15 @@ button, input { font: inherit; }
     min-width: 42px;
   }
 }
+
+
+.cached-banner {
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(240,179,90,.22);
+  border-radius: 12px;
+  background: rgba(240,179,90,.08);
+  color: #d69a43;
+  font-size: 11px;
+  line-height: 1.35;
+}
