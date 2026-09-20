@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CoinGeckoKeylessProvider } from '../../adapters/providers/coingecko';
 import { FrankfurterProvider } from '../../adapters/providers/frankfurter';
 import { readPreference, writePreference } from '../../adapters/storage/preferencesDb';
 import { readQuoteSnapshot, writeQuoteSnapshot } from '../../adapters/storage/quoteSnapshotsDb';
@@ -11,11 +12,13 @@ import {
   evaluateExpression
 } from '../../domain/calculator/evaluateExpression';
 import { convertAmount } from '../../domain/conversion/convert';
+import { mergeQuoteSnapshots } from '../../domain/conversion/mergeSnapshots';
 import type { QuoteSnapshot } from '../../domain/conversion/types';
 import { AssetManagerSheet } from './AssetManagerSheet';
 import { CalculatorKeypad } from './CalculatorKeypad';
 
-const provider = new FrankfurterProvider();
+const fiatProvider = new FrankfurterProvider();
+const cryptoProvider = new CoinGeckoKeylessProvider();
 const plainNumberPattern = /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/;
 const layoutPreferenceKey = 'converter-layout-v1';
 const quoteCachePrefix = 'frankfurter:USD:';
@@ -81,9 +84,11 @@ export function ConverterScreen() {
   );
 
   const quoteCodesKey = useMemo(
-    () => selectedAssets.map((asset) => asset.code).sort().join(','),
+    () => selectedAssets.map((asset) => asset.id).sort().join(','),
     [selectedAssets]
   );
+
+  const hasCrypto = selectedAssets.some((asset) => asset.kind === 'crypto');
 
   useEffect(() => {
     let alive = true;
@@ -128,48 +133,103 @@ export function ConverterScreen() {
   useEffect(() => {
     const controller = new AbortController();
     let alive = true;
-    const codes = quoteCodesKey.split(',').filter(Boolean);
-    const cacheKey = `${quoteCachePrefix}${quoteCodesKey}`;
+
+    const fiatAssets = selectedAssets.filter((asset) => asset.kind === 'fiat');
+    const cryptoAssets = selectedAssets.filter((asset) => asset.kind === 'crypto');
+    const fiatCodes = fiatAssets.map((asset) => asset.code).sort();
+    const fiatNonBaseCodes = fiatCodes.filter((code) => code !== 'USD');
+    const fiatCacheKey = `${quoteCachePrefix}${fiatCodes.join(',')}`;
 
     setSnapshot(null);
     setStatus('loading');
 
     void (async () => {
-      let cached: QuoteSnapshot | undefined;
+      let cachedFiat: QuoteSnapshot | undefined;
 
-      try {
-        cached = await readQuoteSnapshot(cacheKey);
-        if (alive && cached) {
-          setSnapshot(cached);
-          setStatus('stale');
-        }
-      } catch (error) {
-        console.warn('Could not read cached rates.', error);
-      }
+      if (fiatNonBaseCodes.length > 0) {
+        try {
+          cachedFiat = await readQuoteSnapshot(fiatCacheKey);
 
-      try {
-        const next = await provider.getLatest('USD', codes, controller.signal);
-        if (!alive) return;
-
-        setSnapshot(next);
-        setStatus('ready');
-
-        void writeQuoteSnapshot(cacheKey, next).catch((error: unknown) => {
-          console.warn('Could not cache rates.', error);
-        });
-      } catch (error) {
-        if (!controller.signal.aborted && alive) {
-          console.error(error);
-          setStatus(cached ? 'stale' : 'error');
+          if (alive && cachedFiat) {
+            setSnapshot(mergeQuoteSnapshots('USD', [cachedFiat]));
+            setStatus('stale');
+          }
+        } catch (error) {
+          console.warn('Could not read cached fiat rates.', error);
         }
       }
+
+      const referenceOnly: QuoteSnapshot = {
+        reference: 'USD',
+        rates: {},
+        source: 'USD reference',
+        quoteType: 'reference',
+        sourceDate: '',
+        fetchedAt: new Date().toISOString()
+      };
+
+      const fiatPromise = fiatNonBaseCodes.length > 0
+        ? fiatProvider.getLatest('USD', fiatCodes, controller.signal)
+        : Promise.resolve(referenceOnly);
+
+      const cryptoPromise = cryptoAssets.length > 0
+        ? cryptoProvider.getLatest(cryptoAssets, controller.signal)
+        : Promise.resolve<QuoteSnapshot | null>(null);
+
+      const [fiatResult, cryptoResult] = await Promise.allSettled([fiatPromise, cryptoPromise]);
+
+      if (!alive || controller.signal.aborted) return;
+
+      let usedFallback = false;
+      let effectiveFiat: QuoteSnapshot | undefined;
+
+      if (fiatResult.status === 'fulfilled') {
+        effectiveFiat = fiatResult.value;
+
+        if (fiatNonBaseCodes.length > 0) {
+          void writeQuoteSnapshot(fiatCacheKey, effectiveFiat).catch((error: unknown) => {
+            console.warn('Could not cache fiat rates.', error);
+          });
+        }
+      } else if (cachedFiat) {
+        effectiveFiat = cachedFiat;
+        usedFallback = true;
+      } else {
+        console.error(fiatResult.reason);
+      }
+
+      let effectiveCrypto: QuoteSnapshot | null = null;
+
+      if (cryptoResult.status === 'fulfilled') {
+        effectiveCrypto = cryptoResult.value;
+      } else if (cryptoAssets.length > 0) {
+        console.error(cryptoResult.reason);
+        usedFallback = true;
+      }
+
+      const available = [effectiveFiat, effectiveCrypto].filter(
+        (candidate): candidate is QuoteSnapshot => Boolean(candidate)
+      );
+
+      if (available.length === 0) {
+        setStatus('error');
+        return;
+      }
+
+      setSnapshot(mergeQuoteSnapshots('USD', available));
+
+      const expectedProvidersSucceeded =
+        fiatResult.status === 'fulfilled' &&
+        (cryptoAssets.length === 0 || cryptoResult.status === 'fulfilled');
+
+      setStatus(expectedProvidersSucceeded && !usedFallback ? 'ready' : 'stale');
     })();
 
     return () => {
       alive = false;
       controller.abort();
     };
-  }, [quoteCodesKey, refreshVersion]);
+  }, [quoteCodesKey, refreshVersion, selectedAssets]);
 
   useEffect(() => {
     const numeric = parsePlainNumber(expression);
@@ -327,10 +387,18 @@ export function ConverterScreen() {
 
       <p className="meta">
         {snapshot
-          ? `${snapshot.source} · ${snapshot.quoteType} · ${snapshot.sourceDate}${status === 'stale' ? ' · cached' : ''}`
+          ? `${snapshot.source} · ${snapshot.quoteType}${snapshot.sourceDate ? ` · ${snapshot.sourceDate}` : ''}${status === 'stale' ? ' · partial/cached' : ''}`
           : status === 'error'
             ? 'Rates unavailable'
             : 'Loading rates…'}
+        {hasCrypto && (
+          <>
+            {' · '}
+            <a className="provider-attribution" href="https://www.coingecko.com/en/api" target="_blank" rel="noreferrer">
+              Powered by CoinGecko
+            </a>
+          </>
+        )}
       </p>
 
       <section className="currency-list" aria-label="Currencies">
