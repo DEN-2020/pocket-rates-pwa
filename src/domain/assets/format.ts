@@ -1,7 +1,7 @@
 import Decimal from 'decimal.js-light';
 import type { Asset } from './types';
 
-export function formatAssetAmount(value: string, asset: Asset): string {
+export function formatAssetAmount(value: string, asset: Asset, locale?: string): string {
   let decimal: Decimal;
   try {
     decimal = new Decimal(value);
@@ -18,7 +18,7 @@ export function formatAssetAmount(value: string, asset: Asset): string {
   const numeric = Number(decimal.toSignificantDigits(12).toString());
   if (!Number.isFinite(numeric)) return decimal.toString();
 
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(locale, {
     useGrouping: true,
     maximumFractionDigits: maxFractionDigits
   }).format(numeric);
