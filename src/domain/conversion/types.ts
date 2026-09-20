@@ -1,4 +1,4 @@
-export type QuoteType = 'reference' | 'blended' | 'bank' | 'market' | 'custom';
+export type QuoteType = 'reference' | 'blended' | 'bank' | 'market' | 'custom' | 'mixed';
 
 export interface QuoteSnapshot {
   reference: string;
