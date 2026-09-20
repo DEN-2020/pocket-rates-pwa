@@ -73,6 +73,7 @@ export function ConverterScreen() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'stale' | 'error'>('loading');
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   const selectedAssets = useMemo(
     () => selectedAssetIds.map(findAsset).filter((asset): asset is Asset => Boolean(asset)),
@@ -168,12 +169,19 @@ export function ConverterScreen() {
       alive = false;
       controller.abort();
     };
-  }, [quoteCodesKey]);
+  }, [quoteCodesKey, refreshVersion]);
 
   useEffect(() => {
     const numeric = parsePlainNumber(expression);
     if (numeric !== null) setAmount(numeric);
   }, [expression]);
+
+  useEffect(() => {
+    const refreshWhenOnline = () => setRefreshVersion((current) => current + 1);
+    window.addEventListener('online', refreshWhenOnline);
+    return () => window.removeEventListener('online', refreshWhenOnline);
+  }, []);
+
 
   const rows = useMemo(() => {
     return selectedAssets.map((asset) => {
@@ -302,6 +310,15 @@ export function ConverterScreen() {
 
         <div className="topbar-actions">
           <span className={`status status-${status}`} aria-label={`Rates ${status}`} />
+          <button
+            className="icon-button refresh-button"
+            type="button"
+            onClick={() => setRefreshVersion((current) => current + 1)}
+            aria-label="Refresh rates"
+            disabled={status === 'loading'}
+          >
+            ↻
+          </button>
           <button className="manage-button" type="button" onClick={() => setManagerOpen(true)}>
             Edit
           </button>
