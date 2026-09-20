@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { ChartsScreen } from '../features/charts/ChartsScreen';
 import { ConverterScreen } from '../features/converter/ConverterScreen';
 import { CustomRateScreen } from '../features/custom-rates/CustomRateScreen';
+import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { PwaStatus } from './PwaStatus';
 
-type AppTab = 'converter' | 'charts' | 'custom';
+type AppTab = 'converter' | 'charts' | 'custom' | 'settings';
 
 function tabFromHash(): AppTab {
   if (window.location.hash === '#/charts') return 'charts';
   if (window.location.hash === '#/custom-rate') return 'custom';
+  if (window.location.hash === '#/settings') return 'settings';
   return 'converter';
 }
 
@@ -27,7 +29,9 @@ export function App() {
         ? '#/charts'
         : next === 'custom'
           ? '#/custom-rate'
-          : '#/converter';
+          : next === 'settings'
+            ? '#/settings'
+            : '#/converter';
 
     if (window.location.hash === hash) {
       setTab(next);
@@ -42,6 +46,7 @@ export function App() {
       {tab === 'converter' && <ConverterScreen />}
       {tab === 'charts' && <ChartsScreen />}
       {tab === 'custom' && <CustomRateScreen />}
+      {tab === 'settings' && <SettingsScreen />}
 
       <nav className="bottom-nav" aria-label="Main navigation">
         <button
@@ -72,6 +77,16 @@ export function App() {
         >
           <span aria-hidden="true">✎</span>
           <small>My rate</small>
+        </button>
+
+        <button
+          type="button"
+          className={tab === 'settings' ? 'is-active' : ''}
+          aria-current={tab === 'settings' ? 'page' : undefined}
+          onClick={() => navigate('settings')}
+        >
+          <span aria-hidden="true">⚙</span>
+          <small>Settings</small>
         </button>
       </nav>
 
