@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js-light';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { FrankfurterProvider } from '../../adapters/providers/frankfurter';
+import { readHistoricalSeries, writeHistoricalSeries } from '../../adapters/storage/historySeriesDb';
 import { assetCatalog } from '../../domain/assets/catalog';
 import { historyPeriods, resolveHistoryPeriod, type HistoryPeriod } from '../../domain/history/periods';
 import type { HistoricalSeries } from '../../domain/history/types';
@@ -31,39 +32,64 @@ export function ChartsScreen() {
   const [quote, setQuote] = useState('EGP');
   const [period, setPeriod] = useState<HistoryPeriod>('1y');
   const [series, setSeries] = useState<HistoricalSeries | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'stale' | 'error'>('loading');
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    let alive = true;
     const resolved = resolveHistoryPeriod(period);
+    const cacheKey = `frankfurter:${base}:${quote}:${resolved.from}:${resolved.to}:${resolved.grouping}`;
 
     setSeries(null);
     setStatus('loading');
 
-    void provider
-      .getHistory(
-        {
-          base,
-          quote,
-          from: resolved.from,
-          to: resolved.to,
-          grouping: resolved.grouping
-        },
-        controller.signal
-      )
-      .then((next) => {
+    void (async () => {
+      let cached: HistoricalSeries | undefined;
+
+      try {
+        cached = await readHistoricalSeries(cacheKey);
+        if (alive && cached) {
+          setSeries(cached);
+          setStatus('stale');
+        }
+      } catch (error) {
+        console.warn('Could not read cached chart history.', error);
+      }
+
+      try {
+        const next = await provider.getHistory(
+          {
+            base,
+            quote,
+            from: resolved.from,
+            to: resolved.to,
+            grouping: resolved.grouping
+          },
+          controller.signal
+        );
+
+        if (!alive) return;
+
         setSeries(next);
         setStatus('ready');
-      })
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          console.error(error);
-          setStatus('error');
-        }
-      });
 
-    return () => controller.abort();
-  }, [base, period, quote]);
+        void writeHistoricalSeries(cacheKey, next).catch((error: unknown) => {
+          console.warn('Could not cache chart history.', error);
+        });
+      } catch (error) {
+        if (!controller.signal.aborted && alive) {
+          console.error(error);
+          setStatus(cached ? 'stale' : 'error');
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+      controller.abort();
+    };
+  }, [base, period, quote, refreshVersion]);
 
   const stats = useMemo(() => {
     if (!series || series.points.length === 0) {
@@ -120,7 +146,18 @@ export function ChartsScreen() {
           <small>Pocket Rates</small>
           <h1>Charts</h1>
         </div>
-        <span className={`status status-${status}`} aria-label={`Chart data ${status}`} />
+        <div className="topbar-actions">
+          <span className={`status status-${status}`} aria-label={`Chart data ${status}`} />
+          <button
+            className="icon-button refresh-button"
+            type="button"
+            onClick={() => setRefreshVersion((current) => current + 1)}
+            aria-label="Refresh chart data"
+            disabled={status === 'loading'}
+          >
+            ↻
+          </button>
+        </div>
       </header>
 
       <section className="pair-card" aria-label="Currency pair">
@@ -173,15 +210,18 @@ export function ChartsScreen() {
           )}
         </div>
 
-        {status === 'loading' && <div className="chart-placeholder">Loading history…</div>}
+        {status === 'loading' && !series && <div className="chart-placeholder">Loading history…</div>}
         {status === 'error' && <div className="chart-placeholder">Historical rates are unavailable right now.</div>}
-        {status === 'ready' && series && series.points.length === 0 && (
+        {(status === 'ready' || status === 'stale') && series && series.points.length === 0 && (
           <div className="chart-placeholder">No historical data for this pair and period.</div>
         )}
-        {status === 'ready' && series && series.points.length > 0 && (
-          <Suspense fallback={<div className="chart-placeholder">Loading chart…</div>}>
-            <RateChart points={series.points} />
-          </Suspense>
+        {(status === 'ready' || status === 'stale') && series && series.points.length > 0 && (
+          <>
+            {status === 'stale' && <div className="cached-banner">Showing cached history while fresh data is unavailable.</div>}
+            <Suspense fallback={<div className="chart-placeholder">Loading chart…</div>}>
+              <RateChart points={series.points} />
+            </Suspense>
+          </>
         )}
 
         <div className="chart-stats">
