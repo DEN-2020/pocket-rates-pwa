@@ -935,3 +935,34 @@ button, input { font: inherit; }
   font-size: 13px;
   text-underline-offset: 2px;
 }
+
+
+.source-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.source-links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 56px;
+  padding: 10px 13px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.source-links span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-links strong {
+  text-align: right;
+  font-size: 13px;
+}
