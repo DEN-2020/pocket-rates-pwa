@@ -55,14 +55,30 @@ Updated: 2026-09-20
 - Cache retention/version policy.
 - Historical-series caching.
 - Asset manager gesture polish.
-- PWA install/update UI and final icons.
+- PWA install/update UI and final icons are implemented.
 
 ## Next
 1. Add historical-series caching and chart retry state.
 2. Add PWA icons/manifest assets and update prompt UI.
 3. Validate install/offline behavior on the deployed origin.
-4. Add custom/manual rate screen.
-5. Add crypto provider only after the fiat path is stable.
+4. Validate My Rate UX on phone.
+5. Validate crypto keyless rate limits/CORS on the deployed origin before treating crypto as production-ready.
+
+### PWA / settings / custom rate
+- Installable manifest now includes 192px, 512px, maskable and Apple touch icons.
+- Service-worker update/offline-ready prompt is implemented.
+- Android install prompt is supported when the browser exposes it.
+- System/light/dark theme preference is persisted locally and applied before React renders.
+- "My rate" screen supports a persistent manual fiat pair and bidirectional conversion.
+- GitHub Pages deployment is now enabled and succeeding.
+
+### Crypto pilot
+- BTC, ETH and USDT are available as optional assets.
+- CoinGecko Keyless Public API is integrated only for live pilot prices.
+- Fiat + crypto are normalized to a shared USD reference before conversion.
+- CoinGecko attribution is displayed when crypto assets are selected.
+- Crypto is not persisted to IndexedDB and deep crypto history is still deferred.
+- Keyless CoinGecko must not be treated as production infrastructure; official docs describe it as unsuitable for production/high-frequency polling.
 
 ## Deliberately deferred
 - Accounts/sync.
