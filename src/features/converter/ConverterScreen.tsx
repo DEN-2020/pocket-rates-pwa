@@ -43,6 +43,29 @@ function sanitizeDraft(value: string): string {
   return value.replace(/[^\d.,()+\-*\/×÷−\s]/g, '').slice(0, MAX_EXPRESSION_LENGTH);
 }
 
+function friendlySourceName(source: string): string {
+  return source
+    .replaceAll('frankfurter', 'Frankfurter')
+    .replaceAll('coingecko-keyless', 'CoinGecko')
+    .replaceAll('USD reference', 'USD');
+}
+
+function formatSourceDate(value: string): string {
+  if (!value) return '';
+
+  if (!value.includes('T')) return value;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
 function messageForCalculatorError(error: unknown): string {
   if (!(error instanceof CalculatorError)) return 'Could not calculate this expression.';
 
@@ -387,7 +410,7 @@ export function ConverterScreen() {
 
       <p className="meta">
         {snapshot
-          ? `${snapshot.source} · ${snapshot.quoteType}${snapshot.sourceDate ? ` · ${snapshot.sourceDate}` : ''}${status === 'stale' ? ' · partial/cached' : ''}`
+          ? `${friendlySourceName(snapshot.source)} · ${snapshot.quoteType}${snapshot.sourceDate ? ` · ${formatSourceDate(snapshot.sourceDate)}` : ''}${status === 'stale' ? ' · partial/cached' : ''}`
           : status === 'error'
             ? 'Rates unavailable'
             : 'Loading rates…'}
