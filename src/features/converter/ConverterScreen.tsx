@@ -255,7 +255,13 @@ export function ConverterScreen() {
       if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
 
       const next = [...current];
-      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      const currentItem = next[index];
+      const targetItem = next[nextIndex];
+
+      if (currentItem === undefined || targetItem === undefined) return current;
+
+      next[index] = targetItem;
+      next[nextIndex] = currentItem;
       return next;
     });
   };
