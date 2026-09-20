@@ -1,9 +1,10 @@
 const DB_NAME = 'pocket-rates';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const STORES = {
   preferences: 'preferences',
-  quoteSnapshots: 'quote-snapshots'
+  quoteSnapshots: 'quote-snapshots',
+  historySeries: 'history-series'
 } as const;
 
 export function openPocketRatesDb(): Promise<IDBDatabase> {
@@ -24,6 +25,10 @@ export function openPocketRatesDb(): Promise<IDBDatabase> {
 
       if (!database.objectStoreNames.contains(STORES.quoteSnapshots)) {
         database.createObjectStore(STORES.quoteSnapshots);
+      }
+
+      if (!database.objectStoreNames.contains(STORES.historySeries)) {
+        database.createObjectStore(STORES.historySeries);
       }
     };
 
