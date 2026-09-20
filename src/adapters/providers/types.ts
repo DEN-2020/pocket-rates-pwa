@@ -1,8 +1,10 @@
 import type { QuoteSnapshot } from '../../domain/conversion/types';
+import type { HistoricalSeries, HistoryRequest } from '../../domain/history/types';
 
 export interface FiatRateProvider {
   readonly id: string;
   getLatest(base: string, quotes: readonly string[], signal?: AbortSignal): Promise<QuoteSnapshot>;
+  getHistory(request: HistoryRequest, signal?: AbortSignal): Promise<HistoricalSeries>;
 }
 
 export class ProviderError extends Error {
