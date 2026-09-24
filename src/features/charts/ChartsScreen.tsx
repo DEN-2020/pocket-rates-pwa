@@ -5,6 +5,7 @@ import { readHistoricalSeries, writeHistoricalSeries } from '../../adapters/stor
 import { assetCatalog } from '../../domain/assets/catalog';
 import { historyPeriods, resolveHistoryPeriod, type HistoryPeriod } from '../../domain/history/periods';
 import type { HistoricalSeries } from '../../domain/history/types';
+import { RefreshIcon, SwapIcon } from '../../shared/ui/icons';
 
 const RateChart = lazy(() => import('./RateChart'));
 const provider = new FrankfurterProvider();
@@ -155,7 +156,7 @@ export function ChartsScreen() {
             aria-label="Refresh chart data"
             disabled={status === 'loading'}
           >
-            ↻
+            <RefreshIcon />
           </button>
         </div>
       </header>
@@ -165,20 +166,20 @@ export function ChartsScreen() {
           <span>From</span>
           <select value={base} onChange={(event) => changeBase(event.target.value)}>
             {fiatAssets.map((asset) => (
-              <option value={asset.code} key={asset.id}>{asset.code} · {asset.name}</option>
+              <option value={asset.code} key={asset.id}>{asset.flag ? `${asset.flag} ` : ''}{asset.code}</option>
             ))}
           </select>
         </label>
 
         <button className="swap-button" type="button" onClick={swapPair} aria-label="Swap currencies">
-          ⇄
+          <SwapIcon />
         </button>
 
         <label>
           <span>To</span>
           <select value={quote} onChange={(event) => changeQuote(event.target.value)}>
             {fiatAssets.map((asset) => (
-              <option value={asset.code} key={asset.id}>{asset.code} · {asset.name}</option>
+              <option value={asset.code} key={asset.id}>{asset.flag ? `${asset.flag} ` : ''}{asset.code}</option>
             ))}
           </select>
         </label>

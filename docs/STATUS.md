@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-09-20
+Updated: 2026-09-24
 
 ## Completed
 
@@ -88,3 +88,13 @@ Updated: 2026-09-20
 - Browser extension.
 - Windows/native wrappers.
 - Backend.
+
+
+## Active audit/refactor — Phase 6A
+Real Android/Brave screenshots confirmed a vertical-layout problem. Work is now prioritized in this order:
+1. converter scroll architecture: currency list only
+2. compact header/navigation/calculator density
+3. remove Edit text action; add icon management + long-press reorder
+4. fix My Rate input alignment and compact Settings theme selector
+5. consolidate CSS and add restrained glass/gradient surfaces for dark/light
+6. real-device browser/PWA verification before adding further features

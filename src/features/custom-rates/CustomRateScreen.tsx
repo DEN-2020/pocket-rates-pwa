@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { readPreference, writePreference } from '../../adapters/storage/preferencesDb';
 import { assetCatalog } from '../../domain/assets/catalog';
 import { convertWithCustomRate } from '../../domain/customRates/convertCustomRate';
+import { SwapIcon } from '../../shared/ui/icons';
 
 const fiatAssets = assetCatalog.filter((asset) => asset.kind === 'fiat');
 const preferenceKey = 'custom-rate-v1';
@@ -15,6 +16,19 @@ interface SavedCustomRate {
 
 function sanitizeNumber(value: string): string {
   return value.replace(',', '.').replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1').slice(0, 32);
+}
+
+function formatManualNumber(value: string | null, maximumFractionDigits = 6): string {
+  if (!value) return '—';
+
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return value;
+
+  return new Intl.NumberFormat(undefined, {
+    useGrouping: true,
+    maximumFractionDigits,
+    maximumSignificantDigits: 10
+  }).format(numeric);
 }
 
 export function CustomRateScreen() {
@@ -67,7 +81,7 @@ export function CustomRateScreen() {
   const reverse = useMemo(() => {
     try {
       if (!rate) return null;
-      return convertWithCustomRate('1', 'quote-to-base', rate).toSignificantDigits(12).toString();
+      return convertWithCustomRate('1', 'quote-to-base', rate).toSignificantDigits(10).toString();
     } catch {
       return null;
     }
@@ -110,20 +124,20 @@ export function CustomRateScreen() {
             <span>From</span>
             <select value={base} onChange={(event) => changeBase(event.target.value)}>
               {fiatAssets.map((asset) => (
-                <option key={asset.id} value={asset.code}>{asset.code} · {asset.name}</option>
+                <option key={asset.id} value={asset.code}>{asset.flag ? `${asset.flag} ` : ''}{asset.code}</option>
               ))}
             </select>
           </label>
 
           <button className="swap-button" type="button" onClick={swap} aria-label="Swap custom rate pair">
-            ⇄
+            <SwapIcon />
           </button>
 
           <label>
             <span>To</span>
             <select value={quote} onChange={(event) => changeQuote(event.target.value)}>
               {fiatAssets.map((asset) => (
-                <option key={asset.id} value={asset.code}>{asset.code} · {asset.name}</option>
+                <option key={asset.id} value={asset.code}>{asset.flag ? `${asset.flag} ` : ''}{asset.code}</option>
               ))}
             </select>
           </label>
@@ -147,7 +161,7 @@ export function CustomRateScreen() {
 
         <label className="custom-rate-field">
           <span>Amount</span>
-          <div className="rate-input-shell">
+          <div className="rate-input-shell amount-input">
             <input
               inputMode="decimal"
               value={amount}
@@ -160,8 +174,8 @@ export function CustomRateScreen() {
 
         <div className="custom-result">
           <small>Result</small>
-          <strong>{result ?? '—'} {quote}</strong>
-          <span>{reverse ? `1 ${quote} = ${reverse} ${base}` : 'Enter a valid rate'}</span>
+          <strong>{formatManualNumber(result, 6)} {quote}</strong>
+          <span>{reverse ? `1 ${quote} = ${formatManualNumber(reverse, 8)} ${base}` : 'Enter a valid rate'}</span>
         </div>
       </section>
 

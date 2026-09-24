@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CoinGeckoKeylessProvider } from '../../adapters/providers/coingecko';
 import { FrankfurterProvider } from '../../adapters/providers/frankfurter';
 import { readPreference, writePreference } from '../../adapters/storage/preferencesDb';
@@ -14,6 +14,7 @@ import {
 import { convertAmount } from '../../domain/conversion/convert';
 import { mergeQuoteSnapshots } from '../../domain/conversion/mergeSnapshots';
 import type { QuoteSnapshot } from '../../domain/conversion/types';
+import { GripIcon, PlusIcon, RefreshIcon } from '../../shared/ui/icons';
 import { AssetManagerSheet } from './AssetManagerSheet';
 import { CalculatorKeypad } from './CalculatorKeypad';
 
@@ -22,6 +23,7 @@ const cryptoProvider = new CoinGeckoKeylessProvider();
 const plainNumberPattern = /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/;
 const layoutPreferenceKey = 'converter-layout-v1';
 const quoteCachePrefix = 'frankfurter:USD:';
+const longPressMs = 280;
 
 interface ConverterLayoutPreference {
   selectedAssetIds: string[];
@@ -52,7 +54,6 @@ function friendlySourceName(source: string): string {
 
 function formatSourceDate(value: string): string {
   if (!value) return '';
-
   if (!value.includes('T')) return value;
 
   const date = new Date(value);
@@ -85,7 +86,6 @@ function messageForCalculatorError(error: unknown): string {
 function normalizeSelectedIds(ids: readonly string[]): string[] {
   const valid = new Set(assetCatalog.map((asset) => asset.id));
   const unique = [...new Set(ids)].filter((id) => valid.has(id));
-
   return unique.length >= 2 ? unique : [...initialAssetIds];
 }
 
@@ -100,6 +100,10 @@ export function ConverterScreen() {
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [managerOpen, setManagerOpen] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const longPressTimerRef = useRef<number | null>(null);
+  const pointerIdRef = useRef<number | null>(null);
 
   const selectedAssets = useMemo(
     () => selectedAssetIds.map(findAsset).filter((asset): asset is Asset => Boolean(asset)),
@@ -157,8 +161,14 @@ export function ConverterScreen() {
     const controller = new AbortController();
     let alive = true;
 
-    const fiatAssets = selectedAssets.filter((asset) => asset.kind === 'fiat');
-    const cryptoAssets = selectedAssets.filter((asset) => asset.kind === 'crypto');
+    // Reconstruct from the sorted key so changing only visual row order does not hit providers again.
+    const requestAssets = quoteCodesKey
+      .split(',')
+      .map(findAsset)
+      .filter((asset): asset is Asset => Boolean(asset));
+
+    const fiatAssets = requestAssets.filter((asset) => asset.kind === 'fiat');
+    const cryptoAssets = requestAssets.filter((asset) => asset.kind === 'crypto');
     const fiatCodes = fiatAssets.map((asset) => asset.code).sort();
     const fiatNonBaseCodes = fiatCodes.filter((code) => code !== 'USD');
     const fiatCacheKey = `${quoteCachePrefix}${fiatCodes.join(',')}`;
@@ -252,7 +262,7 @@ export function ConverterScreen() {
       alive = false;
       controller.abort();
     };
-  }, [quoteCodesKey, refreshVersion, selectedAssets]);
+  }, [quoteCodesKey, refreshVersion]);
 
   useEffect(() => {
     const numeric = parsePlainNumber(expression);
@@ -265,6 +275,13 @@ export function ConverterScreen() {
     return () => window.removeEventListener('online', refreshWhenOnline);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current !== null) {
+        window.clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
 
   const rows = useMemo(() => {
     return selectedAssets.map((asset) => {
@@ -293,7 +310,7 @@ export function ConverterScreen() {
   }, [activeCode, amount, selectedAssets, snapshot]);
 
   const activateAsset = (asset: Asset, rawValue: string | null) => {
-    if (rawValue === null) return;
+    if (draggingId || rawValue === null) return;
     setAmount(rawValue);
     setExpression(rawValue);
     setActiveCode(asset.code);
@@ -368,13 +385,11 @@ export function ConverterScreen() {
     setSelectedAssetIds((current) => {
       const index = current.indexOf(assetId);
       const nextIndex = index + direction;
-
       if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
 
       const next = [...current];
       const currentItem = next[index];
       const targetItem = next[nextIndex];
-
       if (currentItem === undefined || targetItem === undefined) return current;
 
       next[index] = targetItem;
@@ -383,10 +398,67 @@ export function ConverterScreen() {
     });
   };
 
+  const moveAssetTo = (assetId: string, targetId: string) => {
+    if (assetId === targetId) return;
+
+    setSelectedAssetIds((current) => {
+      const from = current.indexOf(assetId);
+      const to = current.indexOf(targetId);
+      if (from < 0 || to < 0 || from === to) return current;
+
+      const next = [...current];
+      const [moved] = next.splice(from, 1);
+      if (!moved) return current;
+      next.splice(to, 0, moved);
+      return next;
+    });
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleGripPointerDown = (assetId: string, event: React.PointerEvent<HTMLButtonElement>) => {
+    clearLongPressTimer();
+    pointerIdRef.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    longPressTimerRef.current = window.setTimeout(() => {
+      setDraggingId(assetId);
+      navigator.vibrate?.(12);
+      longPressTimerRef.current = null;
+    }, longPressMs);
+  };
+
+  const handleGripPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!draggingId || pointerIdRef.current !== event.pointerId) return;
+
+    event.preventDefault();
+    const hit = document.elementFromPoint(event.clientX, event.clientY);
+    const row = hit?.closest<HTMLElement>('[data-asset-id]');
+    const targetId = row?.dataset.assetId;
+
+    if (targetId) moveAssetTo(draggingId, targetId);
+  };
+
+  const stopGripInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
+    clearLongPressTimer();
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    pointerIdRef.current = null;
+    setDraggingId(null);
+  };
+
   return (
-    <main className="screen">
-      <header className="topbar">
-        <div>
+    <main className="screen converter-screen">
+      <header className="topbar compact-topbar">
+        <div className="title-block">
           <small>Pocket Rates</small>
           <h1>Converter</h1>
         </div>
@@ -400,15 +472,20 @@ export function ConverterScreen() {
             aria-label="Refresh rates"
             disabled={status === 'loading'}
           >
-            ↻
+            <RefreshIcon />
           </button>
-          <button className="manage-button" type="button" onClick={() => setManagerOpen(true)}>
-            Edit
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setManagerOpen(true)}
+            aria-label="Add or manage currencies"
+          >
+            <PlusIcon />
           </button>
         </div>
       </header>
 
-      <p className="meta">
+      <p className="meta converter-meta">
         {snapshot
           ? `${friendlySourceName(snapshot.source)} · ${snapshot.quoteType}${snapshot.sourceDate ? ` · ${formatSourceDate(snapshot.sourceDate)}` : ''}${status === 'stale' ? ' · partial/cached' : ''}`
           : status === 'error'
@@ -418,71 +495,97 @@ export function ConverterScreen() {
           <>
             {' · '}
             <a className="provider-attribution" href="https://www.coingecko.com/en/api" target="_blank" rel="noreferrer">
-              Powered by CoinGecko
+              CoinGecko
             </a>
           </>
         )}
       </p>
 
-      <section className="currency-list" aria-label="Currencies">
-        {rows.map(({ asset, rawValue, displayValue }) => {
-          const active = asset.code === activeCode;
+      <section className="currency-viewport" aria-label="Currencies">
+        <div className="currency-list glass-surface">
+          {rows.map(({ asset, rawValue, displayValue }) => {
+            const active = asset.code === activeCode;
+            const dragging = draggingId === asset.id;
 
-          return (
-            <div className={`currency-row ${active ? 'is-active' : ''}`} key={asset.id}>
-              <button
-                className="currency-select"
-                type="button"
-                onClick={() => activateAsset(asset, rawValue)}
+            return (
+              <div
+                className={`currency-row ${active ? 'is-active' : ''} ${dragging ? 'is-dragging' : ''}`}
+                key={asset.id}
+                data-asset-id={asset.id}
               >
-                <span className="flag" aria-hidden="true">{asset.flag}</span>
-                <span>
-                  <strong>{asset.code}</strong>
-                  <small>{asset.name}</small>
-                </span>
-              </button>
+                <button
+                  className="currency-drag-handle"
+                  type="button"
+                  aria-label={`Long press and drag to reorder ${asset.code}`}
+                  onPointerDown={(event) => handleGripPointerDown(asset.id, event)}
+                  onPointerMove={handleGripPointerMove}
+                  onPointerUp={stopGripInteraction}
+                  onPointerCancel={stopGripInteraction}
+                >
+                  <GripIcon />
+                </button>
 
-              {active ? (
-                <input
-                  aria-label={`Amount or calculation in ${asset.code}`}
-                  inputMode="decimal"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={expression}
-                  onChange={(event) => {
-                    setCalculatorError(null);
-                    setExpression(sanitizeDraft(event.target.value));
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') calculate();
-                  }}
-                />
-              ) : (
-                <output title={rawValue ?? undefined}>{displayValue}</output>
-              )}
-            </div>
-          );
-        })}
+                <button
+                  className="currency-select"
+                  type="button"
+                  onClick={() => activateAsset(asset, rawValue)}
+                >
+                  <span className="flag" aria-hidden="true">{asset.flag}</span>
+                  <span>
+                    <strong>{asset.code}</strong>
+                    <small>{asset.name}</small>
+                  </span>
+                </button>
+
+                {active ? (
+                  <div className="editable-amount">
+                    <input
+                      aria-label={`Amount or calculation in ${asset.code}`}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={expression}
+                      onChange={(event) => {
+                        setCalculatorError(null);
+                        setExpression(sanitizeDraft(event.target.value));
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') calculate();
+                      }}
+                    />
+                    <span className="edit-hint" aria-hidden="true">tap to type</span>
+                  </div>
+                ) : (
+                  <output title={rawValue ?? undefined}>{displayValue}</output>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </section>
 
-      <div className="calculator-feedback" aria-live="polite">
-        {calculatorError ?? 'Arithmetic is local — typing does not request new rates.'}
-      </div>
+      <section className="calculator-dock">
+        {calculatorError && (
+          <div className="calculator-feedback has-error" aria-live="polite">
+            {calculatorError}
+          </div>
+        )}
 
-      <CalculatorKeypad
-        onToken={appendToken}
-        onClear={() => {
-          setExpression('0');
-          setAmount('0');
-          setCalculatorError(null);
-        }}
-        onBackspace={() => {
-          setCalculatorError(null);
-          setExpression((current) => current.length <= 1 ? '0' : current.slice(0, -1));
-        }}
-        onToggleSign={toggleSign}
-        onEquals={calculate}
-      />
+        <CalculatorKeypad
+          onToken={appendToken}
+          onClear={() => {
+            setExpression('0');
+            setAmount('0');
+            setCalculatorError(null);
+          }}
+          onBackspace={() => {
+            setCalculatorError(null);
+            setExpression((current) => current.length <= 1 ? '0' : current.slice(0, -1));
+          }}
+          onToggleSign={toggleSign}
+          onEquals={calculate}
+        />
+      </section>
 
       {managerOpen && (
         <AssetManagerSheet

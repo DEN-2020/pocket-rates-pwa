@@ -1,6 +1,13 @@
 import { useMemo, useState } from 'react';
 import { assetCatalog } from '../../domain/assets/catalog';
 import type { Asset } from '../../domain/assets/types';
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CloseIcon,
+  PlusIcon,
+  TrashIcon
+} from '../../shared/ui/icons';
 
 interface AssetManagerSheetProps {
   selectedAssets: readonly Asset[];
@@ -28,6 +35,7 @@ export function AssetManagerSheet({
     return assetCatalog.filter((asset) => {
       if (selectedIds.has(asset.id)) return false;
       if (!normalizedQuery) return true;
+
       return (
         asset.code.toLowerCase().includes(normalizedQuery) ||
         asset.name.toLowerCase().includes(normalizedQuery)
@@ -36,23 +44,33 @@ export function AssetManagerSheet({
   }, [normalizedQuery, selectedIds]);
 
   return (
-    <div className="sheet-backdrop" role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
+    <div
+      className="sheet-backdrop"
+      role="presentation"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
       <section className="asset-sheet" role="dialog" aria-modal="true" aria-labelledby="asset-sheet-title">
         <header className="sheet-header">
           <div>
-            <small>Customize</small>
+            <small>Manage</small>
             <h2 id="asset-sheet-title">Currencies</h2>
           </div>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Close currency manager">×</button>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Close currency manager">
+            <CloseIcon />
+          </button>
         </header>
 
         <div className="selected-assets" aria-label="Selected currencies">
           {selectedAssets.map((asset, index) => (
             <div className="selected-asset-row" key={asset.id}>
               <span className="flag" aria-hidden="true">{asset.flag}</span>
-              <span className="asset-label"><strong>{asset.code}</strong><small>{asset.name}</small></span>
+              <span className="asset-label">
+                <strong>{asset.code}</strong>
+                <small>{asset.name}</small>
+              </span>
+
               <div className="asset-actions">
                 <button
                   type="button"
@@ -60,21 +78,27 @@ export function AssetManagerSheet({
                   onClick={() => onMove(asset.id, -1)}
                   disabled={index === 0}
                   aria-label={`Move ${asset.code} up`}
-                >↑</button>
+                >
+                  <ChevronUpIcon />
+                </button>
                 <button
                   type="button"
                   className="mini-button"
                   onClick={() => onMove(asset.id, 1)}
                   disabled={index === selectedAssets.length - 1}
                   aria-label={`Move ${asset.code} down`}
-                >↓</button>
+                >
+                  <ChevronDownIcon />
+                </button>
                 <button
                   type="button"
                   className="mini-button danger-button"
                   onClick={() => onRemove(asset.id)}
                   disabled={selectedAssets.length <= 2}
                   aria-label={`Remove ${asset.code}`}
-                >−</button>
+                >
+                  <TrashIcon />
+                </button>
               </div>
             </div>
           ))}
@@ -85,7 +109,7 @@ export function AssetManagerSheet({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by code or name"
+            placeholder="Search currency"
             autoComplete="off"
             inputMode="search"
           />
@@ -93,12 +117,21 @@ export function AssetManagerSheet({
 
         <div className="available-assets" aria-label="Available currencies">
           {available.map((asset) => (
-            <button className="available-asset-row" type="button" key={asset.id} onClick={() => onAdd(asset)}>
+            <button
+              className="available-asset-row"
+              type="button"
+              key={asset.id}
+              onClick={() => onAdd(asset)}
+            >
               <span className="flag" aria-hidden="true">{asset.flag}</span>
-              <span className="asset-label"><strong>{asset.code}</strong><small>{asset.name}</small></span>
-              <span className="add-glyph" aria-hidden="true">＋</span>
+              <span className="asset-label">
+                <strong>{asset.code}</strong>
+                <small>{asset.name}</small>
+              </span>
+              <span className="add-glyph" aria-hidden="true"><PlusIcon /></span>
             </button>
           ))}
+
           {available.length === 0 && <p className="empty-state">No matching currencies.</p>}
         </div>
       </section>
