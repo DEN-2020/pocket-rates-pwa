@@ -812,7 +812,8 @@ a:focus-visible {
 .rate-chart,
 .chart-placeholder {
   width: 100%;
-  min-height: min(300px, 39svh);
+  height: min(300px, 39svh);
+  min-height: 220px;
 }
 
 .chart-placeholder {
@@ -1157,7 +1158,7 @@ a:focus-visible {
   .calc-key.is-equals { min-height: 40px; }
   .bottom-nav button { min-height: 47px; }
   .bottom-nav button svg { font-size: 18px; }
-  .rate-chart, .chart-placeholder { min-height: min(260px, 34svh); }
+  .rate-chart, .chart-placeholder { height: min(250px, 33svh); min-height: 190px; }
 }
 
 @media (max-height: 660px) {
@@ -1211,5 +1212,83 @@ a:focus-visible {
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+
+/* Real-device follow-up: keep Charts mostly within a mobile viewport. */
+.chart-screen {
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+.chart-screen .topbar {
+  min-height: 52px;
+}
+
+.chart-screen .pair-card {
+  padding: 9px;
+}
+
+.chart-screen .period-strip {
+  margin: 7px 0;
+  padding-bottom: 2px;
+}
+
+.chart-screen .chart-card {
+  padding: 11px;
+}
+
+.chart-screen .chart-heading {
+  margin-bottom: 5px;
+}
+
+.chart-screen .rate-chart,
+.chart-screen .chart-placeholder {
+  height: min(250px, 32svh);
+  min-height: 190px;
+}
+
+.chart-screen .chart-stats {
+  margin-top: 7px;
+}
+
+.chart-screen .chart-meta {
+  margin-top: 7px;
+}
+
+@media (max-height: 740px) {
+  .chart-screen .topbar {
+    min-height: 46px;
+  }
+
+  .chart-screen .rate-chart,
+  .chart-screen .chart-placeholder {
+    height: min(220px, 28svh);
+    min-height: 175px;
+  }
+
+  .chart-screen .chart-card {
+    padding: 9px;
+  }
+}
+
+@media (max-height: 660px) {
+  .chart-screen .pair-card {
+    padding: 7px;
+  }
+
+  .chart-screen .period-strip button {
+    min-height: 31px;
+    padding-inline: 9px;
+  }
+
+  .chart-screen .rate-chart,
+  .chart-screen .chart-placeholder {
+    height: min(195px, 25svh);
+    min-height: 160px;
+  }
+
+  .chart-screen .chart-stats > div {
+    padding: 7px;
   }
 }

@@ -20,7 +20,6 @@ export default function RateChart({ points }: RateChartProps) {
 
     const chart = createChart(container, {
       autoSize: true,
-      height: 300,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor

@@ -141,7 +141,7 @@ export function ChartsScreen() {
   };
 
   return (
-    <main className="screen chart-screen">
+    <main className="screen chart-screen compact-data-screen">
       <header className="topbar">
         <div>
           <small>Pocket Rates</small>
