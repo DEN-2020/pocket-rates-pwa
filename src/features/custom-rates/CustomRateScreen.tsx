@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { readPreference, writePreference } from '../../adapters/storage/preferencesDb';
 import { assetCatalog } from '../../domain/assets/catalog';
 import { convertWithCustomRate } from '../../domain/customRates/convertCustomRate';
+import { SwapIcon } from '../../shared/ui/icons';
 
 const fiatAssets = assetCatalog.filter((asset) => asset.kind === 'fiat');
 const preferenceKey = 'custom-rate-v1';
@@ -116,7 +117,7 @@ export function CustomRateScreen() {
           </label>
 
           <button className="swap-button" type="button" onClick={swap} aria-label="Swap custom rate pair">
-            ⇄
+            <SwapIcon />
           </button>
 
           <label>
@@ -147,7 +148,7 @@ export function CustomRateScreen() {
 
         <label className="custom-rate-field">
           <span>Amount</span>
-          <div className="rate-input-shell">
+          <div className="rate-input-shell amount-input">
             <input
               inputMode="decimal"
               value={amount}
