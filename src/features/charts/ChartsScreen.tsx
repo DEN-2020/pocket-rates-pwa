@@ -5,6 +5,7 @@ import { readHistoricalSeries, writeHistoricalSeries } from '../../adapters/stor
 import { assetCatalog } from '../../domain/assets/catalog';
 import { historyPeriods, resolveHistoryPeriod, type HistoryPeriod } from '../../domain/history/periods';
 import type { HistoricalSeries } from '../../domain/history/types';
+import { RefreshIcon, SwapIcon } from '../../shared/ui/icons';
 
 const RateChart = lazy(() => import('./RateChart'));
 const provider = new FrankfurterProvider();
@@ -155,7 +156,7 @@ export function ChartsScreen() {
             aria-label="Refresh chart data"
             disabled={status === 'loading'}
           >
-            ↻
+            <RefreshIcon />
           </button>
         </div>
       </header>
@@ -171,7 +172,7 @@ export function ChartsScreen() {
         </label>
 
         <button className="swap-button" type="button" onClick={swapPair} aria-label="Swap currencies">
-          ⇄
+          <SwapIcon />
         </button>
 
         <label>
