@@ -11,6 +11,7 @@ export function PwaStatus() {
   const [installed, setInstalled] = useState(
     () => window.matchMedia('(display-mode: standalone)').matches
   );
+  const [installDismissed, setInstallDismissed] = useState(false);
 
   const {
     offlineReady: [offlineReady, setOfflineReady],
@@ -26,6 +27,7 @@ export function PwaStatus() {
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallDismissed(false);
     };
 
     const onInstalled = () => {
@@ -45,6 +47,7 @@ export function PwaStatus() {
   const dismissStatus = () => {
     setOfflineReady(false);
     setNeedRefresh(false);
+    setInstallDismissed(true);
   };
 
   const install = async () => {
@@ -54,7 +57,9 @@ export function PwaStatus() {
     setInstallPrompt(null);
   };
 
-  if (!offlineReady && !needRefresh && (!installPrompt || installed)) return null;
+  const showInstall = Boolean(installPrompt && !installed && !installDismissed);
+
+  if (!offlineReady && !needRefresh && !showInstall) return null;
 
   return (
     <aside className="pwa-toast" aria-live="polite">
@@ -81,7 +86,7 @@ export function PwaStatus() {
             Update
           </button>
         )}
-        {!needRefresh && installPrompt && !installed && (
+        {!needRefresh && showInstall && (
           <button type="button" className="pwa-primary" onClick={() => void install()}>
             Install
           </button>
