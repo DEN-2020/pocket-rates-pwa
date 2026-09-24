@@ -317,3 +317,96 @@ Use daily, fix issues, only then consider monetization.
 - ticker-as-ID for crypto
 - one freshness timestamp for mixed sources
 - building monetization/account infrastructure before validating the core converter
+
+
+## Phase 6A — mobile UX/layout refactor (approved 2026-09-24)
+
+Real-device screenshots from Android/Brave exposed layout issues that are not visible in desktop-only review. This phase must be completed before adding more product surface.
+
+### Problems confirmed by audit
+- The whole Converter page currently scrolls; calculator and bottom navigation can drift/overlap with browser chrome.
+- Header, cards and controls consume too much vertical space on short mobile viewports.
+- The calculator is styled as a sticky block inside the page instead of a stable non-scrolling input dock.
+- Bottom navigation is fixed while screen padding is generic, causing avoidable overlap/unused height.
+- Currency management depends too much on a visible Edit button.
+- Currency rows do not clearly communicate both editability and reorder affordance.
+- My Rate `Amount` uses a three-column input shell with only two children, producing imperfect alignment.
+- Settings theme choices are unnecessarily tall.
+- CSS accumulated repeated overrides during rapid iteration; this phase should consolidate layout rules rather than append more conflicting declarations.
+- Visual hierarchy is functional but flat; restrained glass/gradient separation can improve depth without reducing contrast.
+
+### Target layout contract
+Converter uses a bounded mobile application shell:
+1. compact header
+2. compact source/freshness line
+3. **only the currency viewport scrolls**
+4. calculator feedback + calculator remain outside the currency scroll area
+5. bottom navigation remains fixed and screen content reserves exactly its space
+
+Use stable small-viewport sizing for mobile browser mode to reduce jumps when browser chrome appears/disappears. Standalone PWA must still use safe-area insets.
+
+### Converter interaction
+- Remove text `Edit` from the header.
+- Replace it with a compact icon action for adding/managing currencies.
+- Every currency row exposes a subtle drag grip.
+- Reorder starts after deliberate long-press on the grip; visual state must show which row is moving.
+- Keep keyboard-accessible up/down reorder controls in the management sheet as an accessibility fallback.
+- Active amount is visually identifiable as editable without making inactive values look like inputs.
+- Long numbers must shrink/clip gracefully and must never overflow a row.
+
+### Compact responsive density
+- Reduce topbar height, title scale, row height, calculator gaps and card padding on short-height phones.
+- Calculator itself must never become a scroll container.
+- Prefer scroll capacity for currencies instead of shrinking calculator keys below comfortable touch sizes.
+- Settings theme selector becomes a compact segmented control.
+- My Rate inputs use explicit two-column/three-column layouts so unit labels and values align correctly.
+- Charts retain a usable plot height but reduce decorative spacing before shrinking data visualization.
+
+### Visual system
+Use restrained fintech glass:
+- translucent layered surfaces
+- subtle backdrop blur only where beneficial
+- semi-transparent gradient borders on primary surfaces
+- very soft accent glow, never neon-heavy
+- clear active/focus states
+- equivalent contrast/readability in dark and light themes
+- no effect that depends on backdrop-filter for legibility; provide opaque fallback colors
+
+### Icons
+Use one internal SVG icon set with consistent stroke width for:
+- converter
+- charts
+- custom rate
+- settings
+- refresh
+- add/manage currencies
+- reorder grip
+- close/remove
+- swap
+
+Do not use random Unicode symbols as the primary navigation icon system.
+
+### Verification matrix
+Before leaving this phase test:
+- Android Brave browser with browser bars visible
+- Android Chrome browser
+- installed standalone PWA
+- short viewport (~650–720 CSS px high)
+- narrow viewport (~320–390 CSS px wide)
+- keyboard open on Converter and My Rate
+- light, dark and system themes
+- 2 currencies and long currency lists
+- long numbers and large crypto values
+- offline cached state
+- chart screen vertical/horizontal interaction
+
+### Exit criteria
+- Currency list is the only scrollable area inside Converter.
+- Calculator and app navigation do not overlap.
+- No visible content is hidden behind bottom navigation.
+- Header no longer requires an Edit text button.
+- Long-press reorder has visual feedback and an accessible fallback.
+- My Rate amount/rate fields are aligned.
+- Theme controls are materially more compact.
+- Both themes have readable glass/gradient styling.
+- CI/typecheck/tests/build remain green.
