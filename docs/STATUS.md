@@ -98,3 +98,32 @@ Real Android/Brave screenshots confirmed a vertical-layout problem. Work is now 
 4. fix My Rate input alignment and compact Settings theme selector
 5. consolidate CSS and add restrained glass/gradient surfaces for dark/light
 6. real-device browser/PWA verification before adding further features
+
+
+### Phase 6A implementation checkpoint — 2026-09-24
+Merged commit: `c0941bcb7ab2a360efe6b5243126e0ffb810a788`.
+
+Implemented:
+- Converter is now a bounded mobile workspace using stable small-viewport height.
+- Only the currency viewport scrolls; calculator and app navigation remain outside it.
+- Header, rows, calculator, navigation, charts and settings were compacted for short mobile screens.
+- Text Edit action was removed; currency management uses a compact icon.
+- Currency rows expose a grip with long-press drag reorder and visual drag feedback.
+- Management sheet keeps accessible up/down reorder buttons as a fallback.
+- Reordering no longer triggers provider requests; request dependencies use a stable sorted asset key.
+- Active amount has a dedicated editable visual state.
+- My Rate amount shell now uses the correct two-column layout and cleaner number formatting.
+- Pair selectors use compact currency labels.
+- Theme controls are now a compact segmented layout.
+- CSS was consolidated into one coherent responsive/glass visual system for dark and light themes.
+- Primary navigation and controls use a consistent internal SVG icon set.
+- CI passed: 21 unit tests, typecheck and production build.
+- Bundle audit: main JS 86.88 kB gzip; lazy chart chunk 53.68 kB gzip; CSS 4.67 kB gzip.
+- GitHub Pages deployment succeeded.
+
+Still required before Phase 6A exit:
+- real-device verification on Android Brave/Chrome and installed PWA
+- verify keyboard-open behavior
+- verify long-press reorder feel and browser gesture conflicts
+- verify light theme contrast on device
+- verify 320–390 px wide and short-height screens
