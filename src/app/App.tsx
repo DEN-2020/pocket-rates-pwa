@@ -3,6 +3,12 @@ import { ChartsScreen } from '../features/charts/ChartsScreen';
 import { ConverterScreen } from '../features/converter/ConverterScreen';
 import { CustomRateScreen } from '../features/custom-rates/CustomRateScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
+import {
+  ChartIcon,
+  ConverterIcon,
+  PencilIcon,
+  SettingsIcon
+} from '../shared/ui/icons';
 import { PwaStatus } from './PwaStatus';
 
 type AppTab = 'converter' | 'charts' | 'custom' | 'settings';
@@ -48,14 +54,14 @@ export function App() {
       {tab === 'custom' && <CustomRateScreen />}
       {tab === 'settings' && <SettingsScreen />}
 
-      <nav className="bottom-nav" aria-label="Main navigation">
+      <nav className="bottom-nav glass-surface" aria-label="Main navigation">
         <button
           type="button"
           className={tab === 'converter' ? 'is-active' : ''}
           aria-current={tab === 'converter' ? 'page' : undefined}
           onClick={() => navigate('converter')}
         >
-          <span aria-hidden="true">⇄</span>
+          <ConverterIcon />
           <small>Converter</small>
         </button>
 
@@ -65,7 +71,7 @@ export function App() {
           aria-current={tab === 'charts' ? 'page' : undefined}
           onClick={() => navigate('charts')}
         >
-          <span aria-hidden="true">⌁</span>
+          <ChartIcon />
           <small>Charts</small>
         </button>
 
@@ -75,7 +81,7 @@ export function App() {
           aria-current={tab === 'custom' ? 'page' : undefined}
           onClick={() => navigate('custom')}
         >
-          <span aria-hidden="true">✎</span>
+          <PencilIcon />
           <small>My rate</small>
         </button>
 
@@ -85,7 +91,7 @@ export function App() {
           aria-current={tab === 'settings' ? 'page' : undefined}
           onClick={() => navigate('settings')}
         >
-          <span aria-hidden="true">⚙</span>
+          <SettingsIcon />
           <small>Settings</small>
         </button>
       </nav>
