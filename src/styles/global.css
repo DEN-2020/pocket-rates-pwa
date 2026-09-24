@@ -812,7 +812,8 @@ a:focus-visible {
 .rate-chart,
 .chart-placeholder {
   width: 100%;
-  min-height: min(300px, 39svh);
+  height: min(300px, 39svh);
+  min-height: 220px;
 }
 
 .chart-placeholder {
@@ -1157,7 +1158,7 @@ a:focus-visible {
   .calc-key.is-equals { min-height: 40px; }
   .bottom-nav button { min-height: 47px; }
   .bottom-nav button svg { font-size: 18px; }
-  .rate-chart, .chart-placeholder { min-height: min(260px, 34svh); }
+  .rate-chart, .chart-placeholder { height: min(250px, 33svh); min-height: 190px; }
 }
 
 @media (max-height: 660px) {
@@ -1243,7 +1244,8 @@ a:focus-visible {
 
 .chart-screen .rate-chart,
 .chart-screen .chart-placeholder {
-  min-height: min(270px, 34svh);
+  height: min(250px, 32svh);
+  min-height: 190px;
 }
 
 .chart-screen .chart-stats {
@@ -1261,7 +1263,8 @@ a:focus-visible {
 
   .chart-screen .rate-chart,
   .chart-screen .chart-placeholder {
-    min-height: min(230px, 30svh);
+    height: min(220px, 28svh);
+    min-height: 175px;
   }
 
   .chart-screen .chart-card {
@@ -1281,7 +1284,8 @@ a:focus-visible {
 
   .chart-screen .rate-chart,
   .chart-screen .chart-placeholder {
-    min-height: min(205px, 27svh);
+    height: min(195px, 25svh);
+    min-height: 160px;
   }
 
   .chart-screen .chart-stats > div {
