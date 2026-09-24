@@ -1213,3 +1213,78 @@ a:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Real-device follow-up: keep Charts mostly within a mobile viewport. */
+.chart-screen {
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+.chart-screen .topbar {
+  min-height: 52px;
+}
+
+.chart-screen .pair-card {
+  padding: 9px;
+}
+
+.chart-screen .period-strip {
+  margin: 7px 0;
+  padding-bottom: 2px;
+}
+
+.chart-screen .chart-card {
+  padding: 11px;
+}
+
+.chart-screen .chart-heading {
+  margin-bottom: 5px;
+}
+
+.chart-screen .rate-chart,
+.chart-screen .chart-placeholder {
+  min-height: min(270px, 34svh);
+}
+
+.chart-screen .chart-stats {
+  margin-top: 7px;
+}
+
+.chart-screen .chart-meta {
+  margin-top: 7px;
+}
+
+@media (max-height: 740px) {
+  .chart-screen .topbar {
+    min-height: 46px;
+  }
+
+  .chart-screen .rate-chart,
+  .chart-screen .chart-placeholder {
+    min-height: min(230px, 30svh);
+  }
+
+  .chart-screen .chart-card {
+    padding: 9px;
+  }
+}
+
+@media (max-height: 660px) {
+  .chart-screen .pair-card {
+    padding: 7px;
+  }
+
+  .chart-screen .period-strip button {
+    min-height: 31px;
+    padding-inline: 9px;
+  }
+
+  .chart-screen .rate-chart,
+  .chart-screen .chart-placeholder {
+    min-height: min(205px, 27svh);
+  }
+
+  .chart-screen .chart-stats > div {
+    padding: 7px;
+  }
+}
