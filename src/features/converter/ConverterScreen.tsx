@@ -541,7 +541,7 @@ export function ConverterScreen() {
                   <div className="editable-amount">
                     <input
                       aria-label={`Amount or calculation in ${asset.code}`}
-                      inputMode="decimal"
+                      inputMode="none"
                       autoComplete="off"
                       spellCheck={false}
                       value={expression}
