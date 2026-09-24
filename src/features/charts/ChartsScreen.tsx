@@ -166,7 +166,7 @@ export function ChartsScreen() {
           <span>From</span>
           <select value={base} onChange={(event) => changeBase(event.target.value)}>
             {fiatAssets.map((asset) => (
-              <option value={asset.code} key={asset.id}>{asset.code} · {asset.name}</option>
+              <option value={asset.code} key={asset.id}>{asset.flag ? `${asset.flag} ` : ''}{asset.code}</option>
             ))}
           </select>
         </label>
@@ -179,7 +179,7 @@ export function ChartsScreen() {
           <span>To</span>
           <select value={quote} onChange={(event) => changeQuote(event.target.value)}>
             {fiatAssets.map((asset) => (
-              <option value={asset.code} key={asset.id}>{asset.code} · {asset.name}</option>
+              <option value={asset.code} key={asset.id}>{asset.flag ? `${asset.flag} ` : ''}{asset.code}</option>
             ))}
           </select>
         </label>
