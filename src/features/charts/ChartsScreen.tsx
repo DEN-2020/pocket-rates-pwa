@@ -28,9 +28,25 @@ function formatRate(value: string | null): string {
   }
 }
 
+function initialPair(): { base: string; quote: string } {
+  const query = window.location.hash.split('?')[1] ?? '';
+  const params = new URLSearchParams(query);
+  const requestedBase = params.get('base')?.toUpperCase();
+  const requestedQuote = params.get('quote')?.toUpperCase();
+  const validCodes = new Set(fiatAssets.map((asset) => asset.code));
+
+  return {
+    base: requestedBase && validCodes.has(requestedBase) ? requestedBase : 'EUR',
+    quote: requestedQuote && validCodes.has(requestedQuote) && requestedQuote !== requestedBase
+      ? requestedQuote
+      : 'EGP'
+  };
+}
+
 export function ChartsScreen() {
-  const [base, setBase] = useState('EUR');
-  const [quote, setQuote] = useState('EGP');
+  const initial = initialPair();
+  const [base, setBase] = useState(initial.base);
+  const [quote, setQuote] = useState(initial.quote);
   const [period, setPeriod] = useState<HistoryPeriod>('1y');
   const [series, setSeries] = useState<HistoricalSeries | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'stale' | 'error'>('loading');
