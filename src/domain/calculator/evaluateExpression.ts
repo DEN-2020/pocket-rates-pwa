@@ -23,11 +23,21 @@ type BinaryOperator = '+' | '-' | '*' | '/';
 type Token =
   | { type: 'number'; value: string; index: number }
   | { type: 'operator'; value: BinaryOperator; index: number }
+  | { type: 'percent'; index: number }
   | { type: 'leftParen'; index: number }
   | { type: 'rightParen'; index: number };
 
+interface EvaluatedValue {
+  value: Decimal;
+  isPercent: boolean;
+}
+
 function normalizeExpression(input: string): string {
-  return input.replaceAll('×', '*').replaceAll('÷', '/').replaceAll('−', '-').replaceAll(',', '.');
+  return input
+    .replaceAll('×', '*')
+    .replaceAll('÷', '/')
+    .replaceAll('−', '-')
+    .replaceAll(',', '.');
 }
 
 function isDigit(char: string): boolean {
@@ -57,14 +67,18 @@ function tokenize(input: string): Token[] {
         if (isDigit(current)) { digits += 1; index += 1; continue; }
         if (current === '.') {
           dots += 1;
-          if (dots > 1) throw new CalculatorError('MALFORMED_NUMBER', 'Number has more than one decimal point.', index);
+          if (dots > 1) {
+            throw new CalculatorError('MALFORMED_NUMBER', 'Number has more than one decimal point.', index);
+          }
           index += 1;
           continue;
         }
         break;
       }
 
-      if (digits === 0) throw new CalculatorError('MALFORMED_NUMBER', 'A decimal point must belong to a number.', start);
+      if (digits === 0) {
+        throw new CalculatorError('MALFORMED_NUMBER', 'A decimal point must belong to a number.', start);
+      }
 
       let value = source.slice(start, index);
       if (value.startsWith('.')) value = `0${value}`;
@@ -74,8 +88,17 @@ function tokenize(input: string): Token[] {
     }
 
     if (char === '+' || char === '-' || char === '*' || char === '/') {
-      tokens.push({ type: 'operator', value: char, index }); index += 1; continue;
+      tokens.push({ type: 'operator', value: char, index });
+      index += 1;
+      continue;
     }
+
+    if (char === '%') {
+      tokens.push({ type: 'percent', index });
+      index += 1;
+      continue;
+    }
+
     if (char === '(') { tokens.push({ type: 'leftParen', index }); index += 1; continue; }
     if (char === ')') { tokens.push({ type: 'rightParen', index }); index += 1; continue; }
 
@@ -88,70 +111,140 @@ function tokenize(input: string): Token[] {
 
 class Parser {
   private position = 0;
+
   constructor(private readonly tokens: readonly Token[]) {}
 
   parse(): Decimal {
     const result = this.parseAdditive(0);
     const trailing = this.peek();
-    if (trailing) throw new CalculatorError('UNEXPECTED_TOKEN', 'Unexpected token after the result.', trailing.index);
-    return result;
+
+    if (trailing) {
+      throw new CalculatorError('UNEXPECTED_TOKEN', 'Unexpected token after the result.', trailing.index);
+    }
+
+    return result.isPercent ? result.value.div(100) : result.value;
   }
 
-  private peek(): Token | undefined { return this.tokens[this.position]; }
+  private peek(): Token | undefined {
+    return this.tokens[this.position];
+  }
 
   private consume(): Token {
     const token = this.peek();
-    if (!token) throw new CalculatorError('UNEXPECTED_TOKEN', 'Expression ended unexpectedly.');
+    if (!token) {
+      throw new CalculatorError('UNEXPECTED_TOKEN', 'Expression ended unexpectedly.');
+    }
     this.position += 1;
     return token;
   }
 
-  private parseAdditive(depth: number): Decimal {
-    let value = this.parseMultiplicative(depth);
+  private asScalar(result: EvaluatedValue): Decimal {
+    return result.isPercent ? result.value.div(100) : result.value;
+  }
+
+  private parseAdditive(depth: number): EvaluatedValue {
+    let left = this.parseMultiplicative(depth);
+
     while (true) {
       const token = this.peek();
       if (token?.type !== 'operator' || (token.value !== '+' && token.value !== '-')) break;
+
       this.consume();
       const right = this.parseMultiplicative(depth);
-      value = token.value === '+' ? value.plus(right) : value.minus(right);
+      const leftScalar = this.asScalar(left);
+
+      if (right.isPercent) {
+        const delta = leftScalar.mul(right.value).div(100);
+        left = {
+          value: token.value === '+' ? leftScalar.plus(delta) : leftScalar.minus(delta),
+          isPercent: false
+        };
+      } else {
+        left = {
+          value: token.value === '+' ? leftScalar.plus(right.value) : leftScalar.minus(right.value),
+          isPercent: false
+        };
+      }
     }
-    return value;
+
+    return left;
   }
 
-  private parseMultiplicative(depth: number): Decimal {
-    let value = this.parseUnary(depth);
+  private parseMultiplicative(depth: number): EvaluatedValue {
+    let left = this.parseUnary(depth);
+
     while (true) {
       const token = this.peek();
       if (token?.type !== 'operator' || (token.value !== '*' && token.value !== '/')) break;
+
       this.consume();
       const right = this.parseUnary(depth);
-      if (token.value === '/' && right.isZero()) throw new CalculatorError('DIVISION_BY_ZERO', 'Cannot divide by zero.', token.index);
-      value = token.value === '*' ? value.mul(right) : value.div(right);
+      const leftScalar = this.asScalar(left);
+      const rightScalar = this.asScalar(right);
+
+      if (token.value === '/' && rightScalar.isZero()) {
+        throw new CalculatorError('DIVISION_BY_ZERO', 'Cannot divide by zero.', token.index);
+      }
+
+      left = {
+        value: token.value === '*' ? leftScalar.mul(rightScalar) : leftScalar.div(rightScalar),
+        isPercent: false
+      };
     }
-    return value;
+
+    return left;
   }
 
-  private parseUnary(depth: number): Decimal {
+  private parseUnary(depth: number): EvaluatedValue {
     const token = this.peek();
+
     if (token?.type === 'operator' && (token.value === '+' || token.value === '-')) {
       this.consume();
-      const value = this.parseUnary(depth);
-      return token.value === '-' ? value.negated() : value;
+      const result = this.parseUnary(depth);
+      return {
+        value: token.value === '-' ? result.value.negated() : result.value,
+        isPercent: result.isPercent
+      };
     }
-    return this.parsePrimary(depth);
+
+    return this.parsePostfix(depth);
   }
 
-  private parsePrimary(depth: number): Decimal {
+  private parsePostfix(depth: number): EvaluatedValue {
+    const primary = this.parsePrimary(depth);
+    const token = this.peek();
+
+    if (token?.type === 'percent') {
+      this.consume();
+      return { value: primary.value, isPercent: true };
+    }
+
+    return primary;
+  }
+
+  private parsePrimary(depth: number): EvaluatedValue {
     const token = this.consume();
-    if (token.type === 'number') return new Decimal(token.value);
+
+    if (token.type === 'number') {
+      return { value: new Decimal(token.value), isPercent: false };
+    }
 
     if (token.type === 'leftParen') {
       if (depth >= MAX_NESTING_DEPTH) {
-        throw new CalculatorError('TOO_DEEP', `Parentheses are limited to ${MAX_NESTING_DEPTH} levels.`, token.index);
+        throw new CalculatorError(
+          'TOO_DEEP',
+          `Parentheses are limited to ${MAX_NESTING_DEPTH} levels.`,
+          token.index
+        );
       }
+
       const value = this.parseAdditive(depth + 1);
       const closing = this.peek();
-      if (closing?.type !== 'rightParen') throw new CalculatorError('MISSING_PARENTHESIS', 'Missing closing parenthesis.', token.index);
+
+      if (closing?.type !== 'rightParen') {
+        throw new CalculatorError('MISSING_PARENTHESIS', 'Missing closing parenthesis.', token.index);
+      }
+
       this.consume();
       return value;
     }
