@@ -17,6 +17,20 @@ describe('evaluateExpression', () => {
   it('keeps common decimal arithmetic exact', () => {
     expect(evaluateExpression('0.1 + 0.2').toString()).toBe('0.3');
   });
+
+  it('uses calculator-style percentages for addition and subtraction', () => {
+    expect(evaluateExpression('1000 + 15%').toString()).toBe('1150');
+    expect(evaluateExpression('1000 - 15%').toString()).toBe('850');
+  });
+
+  it('uses percentages as fractions for multiplication and division', () => {
+    expect(evaluateExpression('1000 * 15%').toString()).toBe('150');
+    expect(evaluateExpression('150 / 15%').toString()).toBe('1000');
+  });
+
+  it('supports a standalone percentage', () => {
+    expect(evaluateExpression('15%').toString()).toBe('0.15');
+  });
   it('rejects division by zero', () => {
     try {
       evaluateExpression('12 / (3 - 3)');

@@ -127,3 +127,15 @@ Still required before Phase 6A exit:
 - verify long-press reorder feel and browser gesture conflicts
 - verify light theme contrast on device
 - verify 320–390 px wide and short-height screens
+
+
+## Active implementation — Phase 6B
+Approved 2026-09-25:
+- tapping any amount activates that currency for calculator input
+- tapping flag/code/name replaces that row's currency in-place
+- each fiat row gets a direct chart shortcut for the active pair
+- calculator can collapse to reveal more currencies
+- main keypad gains calculator-style percentage support
+- parentheses move to a compact auxiliary strip
+- equals returns to a normal single key instead of occupying the full row
+- chart pair shortcuts use static-host-safe hash parameters

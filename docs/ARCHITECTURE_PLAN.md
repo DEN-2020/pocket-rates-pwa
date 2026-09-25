@@ -410,3 +410,50 @@ Before leaving this phase test:
 - Theme controls are materially more compact.
 - Both themes have readable glass/gradient styling.
 - CI/typecheck/tests/build remain green.
+
+
+## Phase 6B — converter interaction refinement (approved 2026-09-25)
+
+Real-device use after Phase 6A showed that the compact layout is substantially better, but direct manipulation still needs to match the speed of the reference workflow.
+
+### Row interaction contract
+Each visible currency row has four distinct actions:
+1. drag grip -> deliberate long-press reorder
+2. currency identity (flag/code/name) -> replace that currency in-place
+3. amount -> make this currency the active input and expand the calculator
+4. chart icon -> open Charts preselected for the active fiat currency versus that row
+
+Crypto chart shortcuts stay disabled until licensed/reliable crypto history is implemented.
+
+### Calculator interaction
+Keep exactly one calculator to avoid competing mental models.
+
+Default main grid:
+- C / backspace / % / divide
+- 7 / 8 / 9 / multiply
+- 4 / 5 / 6 / subtract
+- 1 / 2 / 3 / add
+- +/- / 0 / decimal / equals
+
+Parentheses remain available in a compact auxiliary strip above the keypad rather than consuming permanent primary keys.
+
+The calculator is collapsible. When collapsed it becomes a thin handle and returns vertical space to the currency list. Tapping any currency amount activates that currency and expands the calculator automatically.
+
+### Percentage semantics
+Percentage behavior follows common calculator expectations:
+- `1000 + 15% = 1150`
+- `1000 - 15% = 850`
+- `1000 × 15% = 150`
+- `150 ÷ 15% = 1000`
+- standalone `15% = 0.15`
+
+This behavior must remain covered by unit tests because percentage semantics are otherwise ambiguous across calculators.
+
+### Currency replacement
+Replacing a currency keeps its position in the list. Existing selected currencies cannot be duplicated. Replacing the active row keeps the numeric input amount but changes the active currency code.
+
+### Deep-link charts
+Converter chart actions use hash-compatible pair parameters, e.g.:
+`#/charts?base=EUR&quote=EGP`
+
+Charts must initialize from those parameters while remaining compatible with GitHub Pages static hosting.

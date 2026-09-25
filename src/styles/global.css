@@ -1292,3 +1292,236 @@ a:focus-visible {
     padding: 7px;
   }
 }
+
+
+/* Phase 6B: direct row actions and collapsible calculator */
+.currency-row {
+  grid-template-columns: 27px minmax(92px, .86fr) minmax(100px, 1.14fr) 34px;
+  gap: 2px;
+  padding-right: 5px;
+}
+
+.currency-amount-button,
+.editable-amount {
+  min-width: 0;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  text-align: right;
+  font-size: clamp(19px, 5.2vw, 27px);
+  font-weight: 730;
+  letter-spacing: -.04em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.currency-amount-button:active {
+  background: rgba(139,130,255,.07);
+}
+
+.editable-amount {
+  position: relative;
+  display: grid;
+  align-content: center;
+  padding-bottom: 11px;
+  border: 1px solid rgba(139,130,255,.20);
+  background: rgba(139,130,255,.075);
+}
+
+.editable-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editable-amount::after {
+  content: "";
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  left: 7px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: .55;
+}
+
+.row-chart-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: color-mix(in srgb, var(--accent) 82%, var(--muted));
+  font-size: 18px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.row-chart-button:active:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.row-chart-button:disabled {
+  opacity: .22;
+  cursor: default;
+}
+
+.currency-select {
+  border-radius: 11px;
+}
+
+.currency-select:active {
+  background: rgba(255,255,255,.025);
+}
+
+.replace-sheet {
+  max-height: min(78svh, 650px);
+}
+
+.replace-options {
+  max-height: min(60svh, 500px);
+}
+
+.available-asset-row.is-current {
+  background: var(--accent-soft);
+}
+
+.current-label {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+/* Calculator now has a small persistent handle and one consistent keypad. */
+.calculator-shell {
+  min-width: 0;
+}
+
+.calculator-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  padding: 0 4px 3px;
+}
+
+.calculator-collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.calculator-collapse svg {
+  font-size: 14px;
+}
+
+.calculator-extra {
+  display: flex;
+  gap: 4px;
+}
+
+.calculator-extra button {
+  min-width: 29px;
+  min-height: 27px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.calculator-shell.is-collapsed {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background:
+    linear-gradient(var(--glass-fill), var(--glass-fill)) padding-box,
+    linear-gradient(145deg, var(--glass-a), rgba(139,130,255,.10)) border-box;
+}
+
+.calculator-shell.is-collapsed .calculator-toolbar {
+  min-height: 38px;
+  justify-content: center;
+  padding: 0;
+}
+
+.calculator-shell.is-collapsed .calculator-collapse {
+  min-height: 36px;
+  color: var(--text);
+}
+
+.calc-key.is-equals {
+  grid-column: auto;
+  min-height: 44px;
+}
+
+@media (max-height: 740px) {
+  .calculator-toolbar {
+    min-height: 25px;
+    padding-bottom: 2px;
+  }
+
+  .currency-row {
+    grid-template-columns: 25px minmax(88px, .86fr) minmax(96px, 1.14fr) 32px;
+  }
+
+  .currency-amount-button,
+  .editable-amount {
+    min-height: 42px;
+    font-size: clamp(18px, 5vw, 24px);
+  }
+}
+
+@media (max-width: 390px) {
+  .currency-row {
+    grid-template-columns: 24px minmax(84px, .88fr) minmax(90px, 1.12fr) 30px;
+    gap: 1px;
+  }
+
+  .currency-select {
+    grid-template-columns: 31px minmax(0,1fr);
+  }
+
+  .row-chart-button {
+    width: 29px;
+    font-size: 16px;
+  }
+
+  .currency-amount-button,
+  .editable-amount {
+    padding-inline: 4px;
+  }
+}
+
+@media (max-width: 350px) {
+  .currency-row {
+    grid-template-columns: 22px minmax(70px,.82fr) minmax(82px,1.18fr) 28px;
+  }
+
+  .row-chart-button {
+    width: 27px;
+  }
+}
