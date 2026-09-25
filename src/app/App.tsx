@@ -14,9 +14,9 @@ import { PwaStatus } from './PwaStatus';
 type AppTab = 'converter' | 'charts' | 'custom' | 'settings';
 
 function tabFromHash(): AppTab {
-  if (window.location.hash === '#/charts') return 'charts';
-  if (window.location.hash === '#/custom-rate') return 'custom';
-  if (window.location.hash === '#/settings') return 'settings';
+  if (window.location.hash.startsWith('#/charts')) return 'charts';
+  if (window.location.hash.startsWith('#/custom-rate')) return 'custom';
+  if (window.location.hash.startsWith('#/settings')) return 'settings';
   return 'converter';
 }
 
