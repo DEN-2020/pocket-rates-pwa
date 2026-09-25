@@ -14,9 +14,10 @@ import {
 import { convertAmount } from '../../domain/conversion/convert';
 import { mergeQuoteSnapshots } from '../../domain/conversion/mergeSnapshots';
 import type { QuoteSnapshot } from '../../domain/conversion/types';
-import { GripIcon, PlusIcon, RefreshIcon } from '../../shared/ui/icons';
+import { ChartIcon, GripIcon, PlusIcon, RefreshIcon } from '../../shared/ui/icons';
 import { AssetManagerSheet } from './AssetManagerSheet';
 import { CalculatorKeypad } from './CalculatorKeypad';
+import { CurrencyReplaceSheet } from './CurrencyReplaceSheet';
 
 const fiatProvider = new FrankfurterProvider();
 const cryptoProvider = new CoinGeckoKeylessProvider();
@@ -42,7 +43,7 @@ function parsePlainNumber(draft: string): string | null {
 }
 
 function sanitizeDraft(value: string): string {
-  return value.replace(/[^\d.,()+\-*\/×÷−\s]/g, '').slice(0, MAX_EXPRESSION_LENGTH);
+  return value.replace(/[^\d.,%()+\-*\/×÷−\s]/g, '').slice(0, MAX_EXPRESSION_LENGTH);
 }
 
 function friendlySourceName(source: string): string {
@@ -101,6 +102,8 @@ export function ConverterScreen() {
   const [managerOpen, setManagerOpen] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [replacingAssetId, setReplacingAssetId] = useState<string | null>(null);
+  const [calculatorCollapsed, setCalculatorCollapsed] = useState(false);
 
   const longPressTimerRef = useRef<number | null>(null);
   const pointerIdRef = useRef<number | null>(null);
@@ -315,6 +318,37 @@ export function ConverterScreen() {
     setExpression(rawValue);
     setActiveCode(asset.code);
     setCalculatorError(null);
+    setCalculatorCollapsed(false);
+  };
+
+  const replaceAsset = (replacement: Asset) => {
+    if (!replacingAssetId) return;
+
+    const previous = findAsset(replacingAssetId);
+
+    setSelectedAssetIds((current) =>
+      current.map((id) => id === replacingAssetId ? replacement.id : id)
+    );
+
+    if (previous?.code === activeCode) {
+      setActiveCode(replacement.code);
+    }
+
+    setReplacingAssetId(null);
+  };
+
+  const openAssetChart = (asset: Asset) => {
+    const activeAsset = selectedAssets.find((candidate) => candidate.code === activeCode);
+    if (!activeAsset || activeAsset.kind !== 'fiat' || asset.kind !== 'fiat') return;
+
+    const quote =
+      asset.code !== activeCode
+        ? asset.code
+        : selectedAssets.find((candidate) => candidate.kind === 'fiat' && candidate.code !== activeCode)?.code;
+
+    if (!quote) return;
+
+    window.location.hash = `#/charts?base=${encodeURIComponent(activeCode)}&quote=${encodeURIComponent(quote)}`;
   };
 
   const appendToken = (token: string) => {
@@ -528,7 +562,8 @@ export function ConverterScreen() {
                 <button
                   className="currency-select"
                   type="button"
-                  onClick={() => activateAsset(asset, rawValue)}
+                  onClick={() => setReplacingAssetId(asset.id)}
+                  aria-label={`Change ${asset.code} currency`}
                 >
                   <span className="flag" aria-hidden="true">{asset.flag}</span>
                   <span>
@@ -538,26 +573,42 @@ export function ConverterScreen() {
                 </button>
 
                 {active ? (
-                  <div className="editable-amount">
-                    <input
-                      aria-label={`Amount or calculation in ${asset.code}`}
-                      inputMode="none"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={expression}
-                      onChange={(event) => {
-                        setCalculatorError(null);
-                        setExpression(sanitizeDraft(event.target.value));
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') calculate();
-                      }}
-                    />
-                    <span className="edit-hint" aria-hidden="true">tap to type</span>
-                  </div>
+                  <button
+                    className="editable-amount"
+                    type="button"
+                    onClick={() => {
+                      setCalculatorCollapsed(false);
+                      activateAsset(asset, rawValue);
+                    }}
+                    aria-label={`Edit amount in ${asset.code}: ${expression}`}
+                  >
+                    <span className="editable-value">{expression}</span>
+                    <span className="edit-hint" aria-hidden="true">tap amount</span>
+                  </button>
                 ) : (
-                  <output title={rawValue ?? undefined}>{displayValue}</output>
+                  <button
+                    className="currency-amount-button"
+                    type="button"
+                    onClick={() => activateAsset(asset, rawValue)}
+                    aria-label={`Use ${displayValue} ${asset.code} as input`}
+                    title={rawValue ?? undefined}
+                  >
+                    {displayValue}
+                  </button>
                 )}
+
+                <button
+                  className="row-chart-button"
+                  type="button"
+                  onClick={() => openAssetChart(asset)}
+                  disabled={
+                    asset.kind !== 'fiat' ||
+                    selectedAssets.find((candidate) => candidate.code === activeCode)?.kind !== 'fiat'
+                  }
+                  aria-label={`Open chart for ${asset.code}`}
+                >
+                  <ChartIcon />
+                </button>
               </div>
             );
           })}
@@ -572,6 +623,8 @@ export function ConverterScreen() {
         )}
 
         <CalculatorKeypad
+          collapsed={calculatorCollapsed}
+          onToggleCollapsed={() => setCalculatorCollapsed((current) => !current)}
           onToken={appendToken}
           onClear={() => {
             setExpression('0');
@@ -586,6 +639,15 @@ export function ConverterScreen() {
           onEquals={calculate}
         />
       </section>
+
+      {replacingAssetId && findAsset(replacingAssetId) && (
+        <CurrencyReplaceSheet
+          currentAsset={findAsset(replacingAssetId) as Asset}
+          selectedAssets={selectedAssets}
+          onClose={() => setReplacingAssetId(null)}
+          onChoose={replaceAsset}
+        />
+      )}
 
       {managerOpen && (
         <AssetManagerSheet
